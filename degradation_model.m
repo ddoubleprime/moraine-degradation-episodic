@@ -37,7 +37,7 @@ clc
 set(0,'DefaultFigureWindowStyle','docked')
 
 % Define parameters that will be tuned during model inversion.  
-moraine_age = 20.0;         % ka (10^ 3 yr); true age of moraine
+moraine_age = 200.0;         % ka (10^ 3 yr); true age of moraine
 initial_height = 10.0;      % m; initial height of moraine
 initial_slope = 25;         % degrees; initial moraine slope angle (Hallet 
                             % and Putkonen (1994) assume 31 degrees; 
@@ -112,11 +112,36 @@ P_surf(2: 4) = P_slhl(2: 4)* P_mu/ sum(P_slhl(2: 4));
 L_till = att_length/ rho_till; % m 
 L_rock = att_length/ rho_rock; % m
 
-% Determine height of moraine crest as a function of time and initial
-% and final moraine profiles.  
-[times, crest_height, distances, initial_profile, ...
-    final_profile] = m_diffusion(initial_height, initial_slope, k, ...
-    moraine_age, time_step); 
+% Set up initial moraine profile
+length_step = 1;            % m; space step (1-2 m is best)
+length_factor = 3;        % profile length factor (at least 1.5; not 
+                            % important, except for large, old moraines) 
+
+% Establish plotting variables times and distances.  
+L = initial_height/ initial_slope; % m; half-width of the moraine's base
+distances = 0: length_step: (length_factor* L); % m
+
+% Calculate initial moraine profile as a function of distance from the
+% moraine's crest.
+initial_profile = zeros(1, numel(distances)); % m
+for count1 = 1: 1: numel(distances)
+    initial_profile(count1) = initial_height- (count1- 1)* ...
+        length_step* initial_slope;
+    if initial_profile(count1) < 0
+        initial_profile(count1) = 0;
+    end
+end
+
+%% time control for varying degradation rate - modulate diffusivity between periods
+
+
+% Determine height of moraine crest as a function of time
+% and final moraine profile.  
+
+[times, crest_height, final_profile] = ep_diffusion(distances, initial_profile, k, ...
+    moraine_age, time_step);
+
+
 
 % Establish the initial depth for each boulder.  
 final_height = min(crest_height); % m 
@@ -128,7 +153,7 @@ initial_depth = max_depth* rand(1, num_boulders); % m
 % thickness depends on the time that each boulder's upper surface is 
 % higher than the crest of the moraine, and on the erosion rate.  
 shell_thick = zeros(1, num_boulders); % m
-if erosion_rate > 0; % don't do these steps if erosion is nil
+if erosion_rate > 0  % don't do these steps if erosion is nil
     for count1 = 1: 1: num_boulders; 
         boulder_top = initial_height- initial_depth(count1); % m 
         yn = 0; 
@@ -148,7 +173,7 @@ end
 % Step through time, tracking the nuclide concentration in each boulder.  
 boulder_conc = zeros(1, num_boulders); % atoms/ g
 % num_exposed = zeros(1, numel(times)); 
-for count1 = 2: 1: numel(times); 
+for count1 = 2: 1: numel(times) 
     disp(['Calculating time step #', num2str(count1- 1), ' of ',...
         num2str(numel(times)- 1), '... '])
     % Increment concentrations for nuclear decay.  
@@ -185,7 +210,7 @@ times = times/ 10^ 3;
 naive_age = naive_age/ 10^ 3; 
 moraine_age = moraine_age/ 10^ 3; 
 
-if plots == 1;
+if plots == 1
     % Plot the initial (dotted) and final (solid) moraine profiles.
     figure
     plot(distances, initial_profile, 'k--', 'LineWidth', 1.5)

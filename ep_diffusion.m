@@ -17,7 +17,7 @@ function [times, crest_height, final_profile] = ep_diffusion(distances, initial_
 %   vector distances (m)
 
 % distances, vector of distance from the moraine crest (m) 
-    % these should be EQUALLY SPACED as dx used by the diffusion code wil
+    % these should be EQUALLY SPACED as dx used by the diffusion code will
     % be calculated from the second-first interval in distances
 % initial_profile, height of moraine as a function of the values in the
 %   vector distances (m)
@@ -49,16 +49,16 @@ for t=1:length(time)
     profile_prev = active_profile;
     active_profile(1) = active_profile(2);  % no-slope at crest
     
-    for dinc=2:length(profile-1)
+    for dinc=2:length(active_profile)-1
 
         active_profile(dinc) = profile_prev(dinc) + k*(t_step/(dx^2))*(profile_prev(dinc+1) - 2*profile_prev(dinc) + profile_prev(dinc-1));
 
     end
 
-    active_profile(z_length) = outer_bound;   % fixed-elevation at lower bound
+    active_profile(end) = outer_bound;   % fixed-elevation at lower bound
     
     %% Calculate height of moraine as a function of time.  
-    crest(t) = max(profile); 
+    crest(t) = max(active_profile); 
     
 end
 % End of time loop

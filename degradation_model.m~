@@ -12,7 +12,8 @@
 % Code written to run under MATLAB R2008a on an Intel-based Macintosh
 % MacBook.  
 % 
-% Calls the function m_diffusion.m, which is provided in a separate file.  
+% Calls the functions m_diffusion.m and ep_diffusion.m, which are provided
+% in a separate file.
 % 
 % This code was written carefully and has been checked for obvious errors.
 % However, no warranty of any kind is implied.  The code may not even run
@@ -30,7 +31,7 @@
 
 % Clear all variables, commands, and figures.  Set figures to dock
 % automatically.  
-clear all
+clear 
 close all
 clc
 set(0,'DefaultFigureWindowStyle','docked')
@@ -111,11 +112,35 @@ P_surf(2: 4) = P_slhl(2: 4)* P_mu/ sum(P_slhl(2: 4));
 L_till = att_length/ rho_till; % m 
 L_rock = att_length/ rho_rock; % m
 
-% Determine height of moraine crest as a function of time and initial
-% and final moraine profiles.  
-[times, crest_height, distances, initial_profile, ...
-    final_profile] = m_diffusion(initial_height, initial_slope, k, ...
-    moraine_age, time_step); 
+% Set up initial moraine profile
+length_step = 2;            % m; space step (1-2 m is best)
+length_factor = 1.5;        % profile length factor (at least 1.5; not 
+                            % important, except for large, old moraines) 
+
+% Establish plotting variables times and distances.  
+L = initial_height/ initial_slope; % m; half-width of the moraine's base
+distances = 0: length_step: (length_factor* L); % m
+
+% Calculate initial moraine profile as a function of distance from the
+% moraine's crest.
+initial_profile = zeros(1, numel(distances)); % m
+for count1 = 1: 1: numel(distances);
+    initial_profile(count1) = initial_height- (count1- 1)* ...
+        length_step* initial_slope;
+    if initial_profile(count1) < 0;
+        initial_profile(count1) = 0;
+    end
+end
+
+%% time control for varying degradation rate - modulate diffusivity between periods
+
+
+% Determine height of moraine crest as a function of time
+% and final moraine profile.  
+
+
+
+
 
 % Establish the initial depth for each boulder.  
 final_height = min(crest_height); % m 
