@@ -37,7 +37,7 @@ clc
 set(0,'DefaultFigureWindowStyle','docked')
 
 % Define parameters that will be tuned during model inversion.  
-moraine_age = 200.0;         % ka (10^ 3 yr); true age of moraine
+moraine_age = 20.0;         % ka (10^ 3 yr); true age of moraine
 initial_height = 10.0;      % m; initial height of moraine
 initial_slope = 25;         % degrees; initial moraine slope angle (Hallet 
                             % and Putkonen (1994) assume 31 degrees; 
@@ -48,7 +48,7 @@ k = 10^ -3;                 % sq. m/ yr; initial/default topographic diffusion c
 
 % Define other geomorphic parameters that are not part of the inversion.  
 erosion_rate = 0;         % mm/ ka; erosion rate of exposed boulders 
-boulder_height = 1.0;       % m; observed height of boulders when sampled
+boulder_height = 0.5;       % m; observed height of boulders when sampled
 rho_rock = 2.6;             % g/ cm^ 3; density of boulders
 rho_till = 2.0;             % g/ cm^ 3; density of till matrix
 
@@ -139,9 +139,13 @@ initial_profile_interval = initial_profile;
 % define diffusivity in intervals
 % k hist: t_chg(yr) rate(m/yr). Uses default until first defined
 % time point.
+DO_VARIABLE_DIFF = false;
 
-k_t_mtx = [ 10000,  1e-2;
-            15000,  1e-3 ];
+k_t_mtx = [ 4000,  1e-2;
+            5000,  1e-3;
+            8000,  1e-2;
+            9000,  1e-3 ];
+                           
 
 % for each interval, create a times_interval array that starts at zero and
 % goes to the length of the interval
@@ -150,20 +154,26 @@ k_t_mtx = [ 10000,  1e-2;
 % and final moraine profile.  
 % run through time interval times
 for interval = 0:size(k_t_mtx,1)    % interval 0 is that before the first matrix point
-    if interval == 0
+    if DO_VARIABLE_DIFF ~= false
+        if interval == 0
+            interval_start = 0;
+            k_interval = k;
+        else
+            interval_start = k_t_mtx(interval,1);
+            k_interval = k_t_mtx(interval,2);
+        end
+
+        if interval < size(k_t_mtx,1)
+            interval_end = k_t_mtx(interval+1,1);
+        else
+            interval_end = moraine_age;
+        end
+    else     
         interval_start = 0;
-        k_interval = k;
-    else
-        interval_start = k_t_mtx(interval,1);
-        k_interval = k_t_mtx(interval,2);
-    end
-    
-    if interval < size(k_t_mtx,1)
-        interval_end = k_t_mtx(interval+1,1);
-    else
         interval_end = moraine_age;
+        k_interval = k;
     end
-    
+
     if interval_end > moraine_age; interval_end = moraine_age; end
     if interval_start > moraine_age; break; end  % stops if we get to the moraine age before the matrix runs out of intervals
     

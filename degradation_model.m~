@@ -37,7 +37,7 @@ clc
 set(0,'DefaultFigureWindowStyle','docked')
 
 % Define parameters that will be tuned during model inversion.  
-moraine_age = 200.0;         % ka (10^ 3 yr); true age of moraine
+moraine_age = 20.0;         % ka (10^ 3 yr); true age of moraine
 initial_height = 10.0;      % m; initial height of moraine
 initial_slope = 25;         % degrees; initial moraine slope angle (Hallet 
                             % and Putkonen (1994) assume 31 degrees; 
@@ -48,7 +48,7 @@ k = 10^ -3;                 % sq. m/ yr; initial/default topographic diffusion c
 
 % Define other geomorphic parameters that are not part of the inversion.  
 erosion_rate = 0;         % mm/ ka; erosion rate of exposed boulders 
-boulder_height = 1.0;       % m; observed height of boulders when sampled
+boulder_height = 0.5;       % m; observed height of boulders when sampled
 rho_rock = 2.6;             % g/ cm^ 3; density of boulders
 rho_till = 2.0;             % g/ cm^ 3; density of till matrix
 
@@ -92,7 +92,7 @@ plots = 1;                  % If 1, plots the moraine profile, height of
                             % and a histogram of the modeled exposure 
                             % dates.  If 0, none of these plots are
                             % produced.  
-bin_width = 1;              % ka; width of bins in naive age histogram
+bin_width = .25;              % ka; width of bins in naive age histogram
 
 % Convert all quantities to consistent units.  All lengths should be in
 % meters, slopes should be dimensionless, times should be in years, and
@@ -140,8 +140,13 @@ initial_profile_interval = initial_profile;
 % k hist: t_chg(yr) rate(m/yr). Uses default until first defined
 % time point.
 
-k_t_mtx = [ 10000,  1e-2;
-            15000,  1e-3 ];
+% k_t_mtx = [ 4000,  1e-2;
+%             5000,  1e-3;
+%             8000,  1e-2;
+%             9000,  1e-3 ];
+
+k_t_mtx = [ moraine_age,  k  ];
+                           
 
 % for each interval, create a times_interval array that starts at zero and
 % goes to the length of the interval
@@ -152,9 +157,10 @@ k_t_mtx = [ 10000,  1e-2;
 for interval = 0:size(k_t_mtx,1)    % interval 0 is that before the first matrix point
     if interval == 0
         interval_start = 0;
-        k_intterval = k;
+        k_interval = k;
     else
         interval_start = k_t_mtx(interval,1);
+        k_interval = k_t_mtx(interval,2);
     end
     
     if interval < size(k_t_mtx,1)
@@ -174,7 +180,7 @@ for interval = 0:size(k_t_mtx,1)    % interval 0 is that before the first matrix
     % fill out the crest height over the correct times in the main time
     % matrix
     interval_st_idx = floor(interval_start/time_step) + 1;
-    crest_height(interval_st_idx:length(crest_height_interval)) = crest_height_interval;
+    crest_height(interval_st_idx:interval_st_idx+length(crest_height_interval)-1) = crest_height_interval;
     
     % new profile is the start for next interval
     initial_profile_interval = final_profile_interval;
