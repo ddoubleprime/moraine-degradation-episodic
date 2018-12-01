@@ -32,12 +32,35 @@ function [times, crest_height, final_profile] = ep_diffusion(distances, initial_
 % calculate dx
 dx = distances(2)-distances(1); % does not assume a zero distance for first cell
 
+outer_bound = initial_profile(end);
+
 % internal timestep is independent of dt_ext and is defined based on courant criterion
-dt = 1; % replace with courant calculation and then round down to nearest dt_ext multiple
+t_step = 1; % replace with courant calculation
 
 % do the diffusion
+active_profile = initial_profile;
+% -------------------------------------------------------------------------
+% Internal time loop starts
+for tinc=1:t_length
 
+    profile_prev = active_profile;
+    active_profile(1) = active_profile(2);  % no-slope at crest
+    
+    for dinc=2:length(profile-1)
 
-%% Calculate height of moraine as a function of time.  
+        active_profile(dinc) = profile_prev(dinc) + k*(t_step/(dx^2))*(profile_prev(dinc+1) - 2*profile_prev(dinc) + profile_prev(dinc-1));
 
-% crest_height = max(profile)
+    end
+
+    active_profile(z_length) = outer_bound;   % fixed-elevation at lower bound
+    
+    t_count = t_count + t_step;
+
+    %% Calculate height of moraine as a function of time.  
+
+    crest_height = max(profile);
+    
+end
+% End of time loop
+% -------------------------------------------------------------------------
+
