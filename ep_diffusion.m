@@ -39,7 +39,8 @@ t_step = 1; % replace with courant calculation
 time = 0:t_step:time_interval;
 
 % do the diffusion
-active_profile = initial_profile;
+% add a ghost cell on the left edge for boundary control
+active_profile = [0 initial_profile];
 crest = zeros(size(time));
 
 % -------------------------------------------------------------------------
@@ -47,7 +48,7 @@ crest = zeros(size(time));
 for t=1:length(time)
 
     profile_prev = active_profile;
-    active_profile(1) = active_profile(2);  % no-slope at crest
+    active_profile(1) = active_profile(3);  % mirror boundary across crest
     
     for dinc=2:length(active_profile)-1
 
@@ -67,7 +68,7 @@ end
 %% Interpolate internal crest height record at intervals of dt_ext
 times = 0:dt_external:time_interval;
 crest_height = interp1(time,crest,times);
-final_profile = active_profile;
+final_profile = active_profile(2:end);
 
 
 end     % function
