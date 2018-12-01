@@ -139,7 +139,7 @@ initial_profile_interval = initial_profile;
 % define diffusivity in intervals
 % k hist: t_chg(yr) rate(m/yr). Uses default until first defined
 % time point.
-DO_VARIABLE_DIFF = false;
+DO_VARIABLE_DIFF = true;
 
 k_t_mtx = [ 4000,  1e-2;
             5000,  1e-3;
@@ -153,8 +153,15 @@ k_t_mtx = [ 4000,  1e-2;
 % Determine height of moraine crest as a function of time
 % and final moraine profile.  
 % run through time interval times
-for interval = 0:size(k_t_mtx,1)    % interval 0 is that before the first matrix point
-    if DO_VARIABLE_DIFF ~= false
+
+if DO_VARIABLE_DIFF == true
+    num_intervals = size(k_t_mtx,1);
+else
+    num_intervals = 0;
+end
+
+for interval = 0:num_intervals    % interval 0 is that before the first matrix point
+    if DO_VARIABLE_DIFF == true 
         if interval == 0
             interval_start = 0;
             k_interval = k;
