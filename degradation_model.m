@@ -47,8 +47,8 @@ initial_slope = 25;         % degrees; initial moraine slope angle (Hallet
 k = 10^ -3;                 % sq. m/ yr; initial/default topographic diffusion coefficient
 
 % Define other geomorphic parameters that are not part of the inversion.  
-erosion_rate = 0;         % mm/ ka; erosion rate of exposed boulders 
-boulder_height = 0.5;       % m; observed height of boulders when sampled
+erosion_rate = 0;           % mm/ ka; erosion rate of exposed boulders 
+boulder_height = 0.25;       % m; observed height of boulders when sampled
 rho_rock = 2.6;             % g/ cm^ 3; density of boulders
 rho_till = 2.0;             % g/ cm^ 3; density of till matrix
 
@@ -76,7 +76,7 @@ att_length = [160 738 ...   % g/ sq. cm; effective attenuation lengths of
                             % [160 738 2688 4360]
 
 % Define model parameters.  
-num_boulders = 1* 10^ 3;    % number of randomly generated synthetic 
+num_boulders = 10* 10^ 3;    % number of randomly generated synthetic 
                             % boulders (at least 10^ 4; bigger numbers
                             % yield more consistent results, but the model
                             % will take more time to run) 
@@ -92,7 +92,7 @@ plots = 1;                  % If 1, plots the moraine profile, height of
                             % and a histogram of the modeled exposure 
                             % dates.  If 0, none of these plots are
                             % produced.  
-bin_width = 1;              % ka; width of bins in naive age histogram
+bin_width = .25;              % ka; width of bins in naive age histogram
 
 % Convert all quantities to consistent units.  All lengths should be in
 % meters, slopes should be dimensionless, times should be in years, and
@@ -142,9 +142,7 @@ initial_profile_interval = initial_profile;
 DO_VARIABLE_DIFF = true;
 
 k_t_mtx = [ 4000,  1e-2;
-            5000,  1e-3;
-            8000,  1e-2;
-            9000,  1e-3 ];
+            5000,  1e-3; ];
                            
 
 % for each interval, create a times_interval array that starts at zero and
@@ -171,7 +169,7 @@ for interval = 0:num_intervals    % interval 0 is that before the first matrix p
         end
 
         if interval < size(k_t_mtx,1)
-            interval_end = k_t_mtx(interval+1,1);
+            interval_end = k_t_mtx(interval+1,1)-time_step;
         else
             interval_end = moraine_age;
         end
@@ -314,6 +312,23 @@ if plots == 1
     set(h, 'FaceColor', 'b', 'EdgeColor', 'k')
     ylimits = get(gca, 'YLim'); 
     plot([moraine_age moraine_age], ylimits, 'k--', 'LineWidth', 1.5)
+    
+  % CDF of the apparent ages given by the modeled boulders.  
+    figure
+    ct = 0;
+    for a = 0:time_step/1000:moraine_age
+        ct = ct+1;
+        cumdist(ct) = sum(naive_age <= a);
+    end
+    plot(0:time_step/1000:moraine_age,cumdist/num_boulders, 'k', 'LineWidth', 1.5)
+    axis square
+    xlim([floor(min(naive_age)) moraine_age])
+    xlabel('Apparent age (ka)', 'FontSize', 16, 'FontWeight', 'bold')
+    ylabel('P <= age', 'FontSize', 16, ...
+        'FontWeight', 'bold')
+    set(gca, 'FontSize', 14)
+    set(gca, 'LineWidth', 1)
+%    set(gca, 'Box', 'off')
 end
 
 beep
