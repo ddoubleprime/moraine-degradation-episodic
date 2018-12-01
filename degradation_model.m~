@@ -12,8 +12,7 @@
 % Code written to run under MATLAB R2008a on an Intel-based Macintosh
 % MacBook.  
 % 
-% Calls the functions m_diffusion.m and ep_diffusion.m, which are provided
-% in a separate file.
+% Calls the function m_diffusion.m, which is provided in a separate file.  
 % 
 % This code was written carefully and has been checked for obvious errors.
 % However, no warranty of any kind is implied.  The code may not even run
@@ -31,7 +30,7 @@
 
 % Clear all variables, commands, and figures.  Set figures to dock
 % automatically.  
-clear 
+clear all
 close all
 clc
 set(0,'DefaultFigureWindowStyle','docked')
