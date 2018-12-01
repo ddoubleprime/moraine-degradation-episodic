@@ -36,12 +36,15 @@ outer_bound = initial_profile(end);
 
 % internal timestep is independent of dt_ext and is defined based on courant criterion
 t_step = 1; % replace with courant calculation
+time = 0:t_step:time_interval;
 
 % do the diffusion
 active_profile = initial_profile;
+crest = zeros(size(time));
+
 % -------------------------------------------------------------------------
 % Internal time loop starts
-for tinc=1:t_length
+for t=1:length(time)
 
     profile_prev = active_profile;
     active_profile(1) = active_profile(2);  % no-slope at crest
@@ -54,13 +57,19 @@ for tinc=1:t_length
 
     active_profile(z_length) = outer_bound;   % fixed-elevation at lower bound
     
-    t_count = t_count + t_step;
-
     %% Calculate height of moraine as a function of time.  
-
-    crest_height = max(profile);
+    crest(t) = max(profile); 
     
 end
 % End of time loop
 % -------------------------------------------------------------------------
+
+%% Interpolate internal crest height record at intervals of dt_ext
+times = 0:dt_external:time_interval;
+crest_height = interp1(time,crest,times);
+final_profile = active_profile;
+
+
+end     % function
+%% --------------- EOF --------------- %%
 
