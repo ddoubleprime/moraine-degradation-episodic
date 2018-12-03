@@ -46,9 +46,20 @@ initial_slope = 25;         % degrees; initial moraine slope angle (Hallet
                             % Putkonen and O'Neal (2006)) 
 k = 10^ -3;                 % sq. m/ yr; initial/default topographic diffusion coefficient
 
+% Define variable diffusivity in intervals
+% k hist: t_chg(yr) rate(m/yr). Uses default until first defined
+% time point.
+DO_VARIABLE_DIFF = true;
+
+k_t_mtx = [ 3000,  5e-3;
+            4000,  1e-3;
+            6000,  5e-3;
+            8000,  1e-3 ];
+        
+
 % Define other geomorphic parameters that are not part of the inversion.  
 erosion_rate = 0;           % mm/ ka; erosion rate of exposed boulders 
-boulder_height = 0.25;       % m; observed height of boulders when sampled
+boulder_height = .5;       % m; observed height of boulders when sampled
 rho_rock = 2.6;             % g/ cm^ 3; density of boulders
 rho_till = 2.0;             % g/ cm^ 3; density of till matrix
 
@@ -94,6 +105,12 @@ plots = 1;                  % If 1, plots the moraine profile, height of
                             % produced.  
 bin_width = .25;              % ka; width of bins in naive age histogram
 
+
+
+%% ----- END of INPUTS ----- %%
+
+
+
 % Convert all quantities to consistent units.  All lengths should be in
 % meters, slopes should be dimensionless, times should be in years, and
 % masses should be in grams.  
@@ -136,15 +153,7 @@ end
 times = 0:time_step:moraine_age;        % total time sequence
 initial_profile_interval = initial_profile;
 
-% define diffusivity in intervals
-% k hist: t_chg(yr) rate(m/yr). Uses default until first defined
-% time point.
-DO_VARIABLE_DIFF = true;
-
-k_t_mtx = [ 4000,  1e-2;
-            5000,  1e-3; ];
-                           
-
+                          
 % for each interval, create a times_interval array that starts at zero and
 % goes to the length of the interval
 
@@ -190,7 +199,8 @@ for interval = 0:num_intervals    % interval 0 is that before the first matrix p
     % fill out the crest height over the correct times in the main time
     % matrix
     interval_st_idx = floor(interval_start/time_step) + 1;
-    crest_height(interval_st_idx:interval_st_idx+length(crest_height_interval)-1) = crest_height_interval;
+    interval_end_idx = interval_st_idx+length(crest_height_interval)-1;
+    crest_height(interval_st_idx:interval_end_idx) = crest_height_interval;
     
     % new profile is the start for next interval
     initial_profile_interval = final_profile_interval;
@@ -204,7 +214,6 @@ final_profile = final_profile_interval;
 final_height = min(crest_height); % m 
 max_depth = initial_height- final_height- boulder_height; % m 
 initial_depth = max_depth* rand(1, num_boulders); % m 
-% initial_depth = 0: max_depth/ (num_boulders- 1): max_depth; 
 
 % Determine the thickness of the erodible shell on each boulder.  This
 % thickness depends on the time that each boulder's upper surface is 
@@ -229,7 +238,6 @@ end
 
 % Step through time, tracking the nuclide concentration in each boulder.  
 boulder_conc = zeros(1, num_boulders); % atoms/ g
-% num_exposed = zeros(1, numel(times)); 
 for count1 = 2: 1: numel(times) 
     disp(['Calculating time step #', num2str(count1- 1), ' of ',...
         num2str(numel(times)- 1), '... '])
@@ -240,11 +248,10 @@ for count1 = 2: 1: numel(times)
         depth = crest_height(count1)- ...
             (initial_height- initial_depth(count2)); % m 
         % If the boulder is at the surface, 
-        if depth <= 0; 
+        if depth <= 0
             P_sample = P_surf.* exp(-shell_thick(count2)./ L_rock); 
             shell_thick(count2) = shell_thick(count2)- ...
                 erosion_rate* time_step; 
-            % num_exposed(count1) = num_exposed(count1)+ 1; 
         % Otherwise, 
         else 
             P_till = P_surf.* exp(-depth./ L_till); 
@@ -261,6 +268,19 @@ end
 naive_age = -decay_const^ -1* ...
     log(1- ((boulder_conc.* decay_const)./ (P_spall+ P_mu))); % yr
 
+%% Boulder loss as a function of how far exhumed they became
+
+final_bldr_depth = final_height- (initial_height- initial_depth); % m 
+% If the boulder is more than one boulder height above the surface,
+% it has an increasing probability of loss from the crest
+P_remain = ones(size(final_bldr_depth));
+P_remain(final_bldr_depth <= -boulder_height) = exp( (final_bldr_depth(final_bldr_depth <= -boulder_height)+boulder_height)/boulder_height);
+% figure(2)
+% plot(final_bldr_depth,P_remain,'k.')
+lost_boulders = P_remain < rand(1, num_boulders);
+
+%% -------- PLOTS -------- %%
+
 % For ease of plotting, convert variables with a time dimension to ka
 % (10^3 yr).  
 times = times/ 10^ 3; 
@@ -269,7 +289,8 @@ moraine_age = moraine_age/ 10^ 3;
 
 if plots == 1
     % Plot the initial (dotted) and final (solid) moraine profiles.
-    figure
+    figure(1)
+    subplot(2,2,1)
     plot(distances, initial_profile, 'k--', 'LineWidth', 1.5)
     axis square
     hold on
@@ -286,41 +307,50 @@ if plots == 1
 %    set(gca, 'Box', 'off')
 
     % Plot moraine height as a function of time.
-    figure
-    plot(times, crest_height, 'k', 'LineWidth', 1.5)
+    figure(1)
+    subplot(2,2,3)
+    plot(fliplr(times), crest_height, 'k', 'LineWidth', 1.5)
     axis square
-    xlabel('Elapsed time (ka)', 'FontSize', 16, 'FontWeight', 'bold')
+    xlabel('Moraine time (ka)', 'FontSize', 16, 'FontWeight', 'bold')
     ylabel('Crest height (m)', 'FontSize', 16, ...
         'FontWeight', 'bold')
-    set(gca, 'FontSize', 14)
+    set(gca, 'FontSize', 14, 'XDir','reverse')
     set(gca, 'LineWidth', 1)
 %    set(gca, 'Box', 'off')
     
     % Histogram the apparent ages given by the modeled boulders.  
-    figure
+    figure(1)
+    subplot(2,2,2)
     nbins = ceil((max(naive_age)- min(naive_age))/ bin_width); 
-    hist(naive_age, nbins)
-    axis square
+    h1 = histogram(naive_age, nbins);
+    set(h1, 'FaceColor', 'b', 'EdgeColor', 'k')
     hold on
+    h1 = histogram(naive_age(~lost_boulders), nbins);
+    set(h1, 'FaceColor', 'r', 'EdgeColor', 'k')
+    
+    ylimits = get(gca, 'YLim'); 
+    axis square
+
+    plot([moraine_age moraine_age], ylimits, 'k--', 'LineWidth', 1.5)
     xlabel('Apparent age (ka)', 'FontSize', 16, 'FontWeight', 'bold')
     ylabel('Number of boulders', 'FontSize', 16, 'FontWeight', 'bold')
     set(gca, 'FontSize', 14)
     set(gca, 'LineWidth', 1)
     set(gca, 'XTickMode', 'auto')
 %    set(gca, 'Box', 'off')
-    h = findobj(gca, 'Type', 'patch');
-    set(h, 'FaceColor', 'b', 'EdgeColor', 'k')
-    ylimits = get(gca, 'YLim'); 
-    plot([moraine_age moraine_age], ylimits, 'k--', 'LineWidth', 1.5)
-    
+
   % CDF of the apparent ages given by the modeled boulders.  
-    figure
+    figure(1)
+    subplot(2,2,4)
     ct = 0;
     for a = 0:time_step/1000:moraine_age
         ct = ct+1;
         cumdist(ct) = sum(naive_age <= a);
+        cumdist_remain(ct) = sum(naive_age(~lost_boulders) <= a);
     end
-    plot(0:time_step/1000:moraine_age,cumdist/num_boulders, 'k', 'LineWidth', 1.5)
+    plot(0:time_step/1000:moraine_age,cumdist/num_boulders, 'b', 'LineWidth', 1.5)
+    hold on
+    plot(0:time_step/1000:moraine_age,cumdist_remain/sum(~lost_boulders), 'r', 'LineWidth', 1.5)
     axis square
     xlim([floor(min(naive_age)) moraine_age])
     xlabel('Apparent age (ka)', 'FontSize', 16, 'FontWeight', 'bold')
